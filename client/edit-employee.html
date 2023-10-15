@@ -1,0 +1,185 @@
+<html>
+  <body onload="onLoad()">
+    <h1>Hello <span id="fullName"></span></h1>
+    External ID: <input type="number" id="externalId" /><br /><br />
+    Department ID: <input type="number" id="departmentId" /><br /><br />
+    First Name: <input type="text" id="firstName" /><br /><br />
+    Last Name: <input type="text" id="lastName" /><br /><br />
+    Start Work Year: <input type="number" id="startWorkYear" /><br /><br />
+
+    <button onclick="updateData()">Update</button>
+    <button onclick="deleteData()">Delete</button>
+    <br /><br /><br />
+
+    <table border="1">
+      <thead>
+        <tr>
+          <th>Shifts</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <br /><br />
+
+    <button onclick="showShifts()">Show All Shifts</button>
+
+    <br /><br />
+
+    <table border="1" id="displayTable">
+      <thead>
+        <tr>
+          <th>Shifts</th>
+        </tr>
+      </thead>
+      <tbody id="tbody2"></tbody>
+    </table>
+    <br /><br />
+
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+
+      const onLoad = async () => {
+        const employeeId = sessionStorage.getItem("employeeId");
+        const accessToken = sessionStorage.getItem("accessToken");
+
+        const employeesUrl = "http://localhost:3000/employees";
+        const shiftsUrl = "http://localhost:3000/shifts";
+
+        const employeeResp = await fetch(`${employeesUrl}/${employeeId}`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employee = await employeeResp.json();
+
+        const shiftResp = await fetch(shiftsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const shiftsData = await shiftResp.json();
+
+        const shifts = shiftsData.filter((shift) => shift.workers.includes(employee._id));
+
+        shifts.forEach((shift) => {
+          const tbody = document.getElementById("tbody");
+          const tr = tbody.insertRow();
+          const tdShifts = tr.insertCell();
+          tdShifts.innerText = `
+            Workers: ${employee.firstName} ${employee.lastName}
+            Date: ${shift.date.split("T")[0]}
+            Starting Hour: ${shift.startingHour}
+            Ending Hour: ${shift.endingHour}
+        `;
+        });
+
+        document.getElementById("externalId").value = employee.externalId;
+        document.getElementById("departmentId").value = employee.departmentId;
+        document.getElementById("firstName").value = employee.firstName;
+        document.getElementById("lastName").value = employee.lastName;
+        document.getElementById("startWorkYear").value = employee.startWorkYear;
+
+        document.getElementById("displayTable").style.display = "none";
+      };
+
+      // Update Employee
+      const updateData = async () => {
+        const employeeId = sessionStorage.getItem("employeeId");
+        const accessToken = sessionStorage.getItem("accessToken");
+
+        const url = "http://localhost:3000/employees";
+
+        const obj = {
+          externalId: document.getElementById("externalId").value,
+          departmentId: document.getElementById("departmentId").value,
+          firstName: document.getElementById("firstName").value,
+          lastName: document.getElementById("lastName").value,
+          startWorkYear: document.getElementById("startWorkYear").value,
+        };
+
+        const resp = await fetch(`${url}/${employeeId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(obj),
+        });
+      };
+
+      const deleteData = async () => {
+        const employeeId = sessionStorage.getItem("employeeId");
+        const accessToken = sessionStorage.getItem("accessToken");
+        const employeeUrl = "http://localhost:3000/employees";
+        const shiftUrl = "http://localhost:3000/shifts";
+
+        // Delete Employee
+        const employeeResp = await fetch(`${employeeUrl}/${employeeId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+      };
+
+      const showShifts = async () => {
+        const shiftsUrl = "http://localhost:3000/shifts";
+        const employeesUrl = "http://localhost:3000/employees";
+        const accessToken = sessionStorage.getItem("accessToken");
+        const employeeId = sessionStorage.getItem("employeeId");
+
+        const employeeResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeeResp.json();
+
+        const shiftResp = await fetch(shiftsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const shifts = await shiftResp.json();
+
+        document.getElementById("displayTable").style.display = "block";
+
+        shifts.forEach((shift) => {
+          const employeeIds = shift.workers;
+          const employeeNames = employeeIds
+            .map((employeeId) => {
+              const employee = employees.find((emp) => emp._id === employeeId);
+              return `${employee.firstName} ${employee.lastName}`;
+            })
+            .join(", ");
+
+          const tbody2 = document.getElementById("tbody2");
+          const tr = tbody2.insertRow();
+          const tdShift = tr.insertCell();
+          tdShift.innerText = `
+            External ID: ${shift.externalId}
+            Date: ${shift.date.split("T")[0]}
+            Starting Hour: ${shift.startingHour}
+            Ending Hour: ${shift.endingHour}
+            Workers: ${employeeNames}
+          `;
+
+          const tdButton = tr.insertCell();
+          const button = document.createElement("button");
+          button.innerText = "Add Employee To Shift";
+          button.onclick = async () => {
+            const updatedEmployeeIds = [...employeeIds, employeeId];
+            const obj = {
+              workers: updatedEmployeeIds,
+            };
+
+            const shiftResp2 = await fetch(`${shiftsUrl}/${shift._id}`, {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(obj),
+            });
+          };
+          tdButton.appendChild(button);
+        });
+      };
+    </script>
+  </body>
+</html>

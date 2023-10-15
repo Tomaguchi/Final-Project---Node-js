@@ -1,0 +1,126 @@
+script
+<html>
+  <body onload="loadData()">
+    <h1>Hello <span id="fullName"></span></h1>
+
+    Department Name: <input type="text" id="name" /> <br /><br />
+    Manager: <input type="text" id="manager" /> <br /><br />
+    Workers: <input type="text" id="workers" /> <br /><br />
+
+    <br /><br />
+
+    <button onclick="updateDep()">Update</button>
+    <button onclick="deleteDep()">Delete</button>
+
+    <br /><br /><br /><br />
+
+    <label for="employees">Choose an employee:</label>
+    <select id="employees"></select>
+
+    <br /><br />
+
+    <button onclick="save()">Save</button>
+
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+
+      const departmentsUrl = "http://localhost:3000/departments";
+      const employeesUrl = "http://localhost:3000/employees";
+      const departmentId = sessionStorage.getItem("departmentId");
+      const accessToken = sessionStorage.getItem("accessToken");
+      let department;
+
+      const loadData = async () => {
+        const departmentsResp = await fetch(`${departmentsUrl}/${departmentId}`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        department = await departmentsResp.json();
+
+        const employeesResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeesResp.json();
+
+        const empData = employees.filter((emp) => department.workers.includes(emp._id));
+        const names = empData.map((emp) => emp.firstName + " " + emp.lastName);
+
+        document.getElementById("name").value = department.name;
+        document.getElementById("manager").value = department.manager;
+        document.getElementById("workers").value = names;
+        renderDropdown();
+      };
+
+      // Update
+      const updateDep = async () => {
+        const departmentsResp = await fetch(`${departmentsUrl}/${departmentId}`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const department = await departmentsResp.json();
+
+        const employeesResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeesResp.json();
+
+        const workers = document.getElementById("workers").value;
+        const workerIds = workers.split(",").map((workerName) => {
+          const workerId = employees.find(
+            (emp) => `${emp.firstName} ${emp.lastName}` === workerName
+          )._id;
+
+          return workerId;
+        });
+
+        const updatedDepartment = {
+          name: document.getElementById("name").value,
+          manager: document.getElementById("manager").value,
+          workers: workerIds,
+        };
+
+        const postDepResp = await fetch(`${departmentsUrl}/${departmentId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedDepartment),
+        });
+      };
+      // Delete
+      const deleteDep = async () => {
+        const resp = await fetch(`${departmentsUrl}/${departmentId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+      };
+
+      async function renderDropdown() {
+        const employeesResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeesResp.json();
+
+        employees
+          .filter((employee) => !department.workers.includes(employee._id))
+          .forEach((employee) => {
+            const select = document.getElementById("employees");
+            const option = document.createElement("option");
+
+            // Show only employees that don't work in the current department
+            const workers = document.getElementById("workers").value;
+            const workersArray = workers.split(",");
+
+            option.value = employee.firstName + " " + employee.lastName;
+            option.text = employee.firstName + " " + employee.lastName;
+            select.appendChild(option);
+          });
+      }
+    </script>
+  </body>
+</html>

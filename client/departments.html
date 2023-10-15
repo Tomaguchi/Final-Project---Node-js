@@ -1,0 +1,80 @@
+<html>
+  <body onload="loadData()">
+    <h1>Welcome <span id="fullName"></span></h1>
+
+    <table id="employeesTable" border="1">
+      <thead>
+        <tr>
+          <th>Department Name</th>
+          <th>Manager</th>
+          <th>Employees</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <br /><br />
+
+    <button onclick="addDepartment()">New Department</button>
+
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+
+      const loadData = async () => {
+        const accessToken = sessionStorage.getItem("accessToken");
+        const departmentsUrl = "http://localhost:3000/departments";
+        const employeesUrl = "http://localhost:3000/employees";
+
+        const departmentsResp = await fetch(departmentsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const departments = await departmentsResp.json();
+
+        const tbody = document.getElementById("tbody");
+
+        const employeesResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeesResp.json();
+
+        departments.forEach((department) => {
+          const tr = tbody.insertRow();
+
+          // Department Name column
+          const tdDep = tr.insertCell();
+          const depLink = document.createElement("a");
+          depLink.href = "./edit-department.html";
+          depLink.onclick = () => {
+            sessionStorage.setItem("departmentId", department._id);
+          };
+          depLink.innerText = department.name;
+          tdDep.appendChild(depLink);
+
+          // Manager column
+          const tdManager = tr.insertCell();
+          const employee = employees.find((emp) => emp.externalId === department.manager);
+          tdManager.innerText = `${employee.firstName} ${employee.lastName}`;
+
+          for (const employee of employees) {
+            const tdEmployees = tr.insertCell();
+            const empLink = document.createElement("a");
+            empLink.href = "./edit-employee.html";
+            empLink.innerText = employee.firstName + " " + employee.lastName;
+
+            empLink.onclick = () => {
+              sessionStorage.setItem("employeeId", employee._id);
+            };
+            tdEmployees.appendChild(empLink);
+          }
+        });
+      };
+
+      const addDepartment = () => {
+        location.href = "./add-department.html";
+      };
+    </script>
+  </body>
+</html>

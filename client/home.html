@@ -1,0 +1,15 @@
+<html>
+  <body>
+    <h1>Welcome <span id="fullName"></span></h1>
+    <ul>
+      <li><a href="./employees.html">Employees</a></li>
+      <li><a href="./departments.html">Departments</a></li>
+      <li><a href="./shifts.html">Shifts</a></li>
+      <li><a href="">Users</a></li>
+    </ul>
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+    </script>
+  </body>
+</html>

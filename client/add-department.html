@@ -1,0 +1,48 @@
+<html>
+  <body>
+    <h1>Hello <span id="fullName"></span></h1>
+    External ID: <input type="text" id="externalId" /> <br />
+    Name: <input type="text" id="name" /> <br />
+    Manager: <input type="text" id="manager" /> <br />
+    Workers: <input type="text" id="workers" /> <br />
+    <button onclick="saveDepartment()">Save</button>
+    <button onclick="cancel()">Cancel</button>
+
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+
+      const accessToken = sessionStorage.getItem("accessToken");
+      const departmentsUrl = "http://localhost:3000/departments";
+
+      // Don't work
+
+      const saveDepartment = async () => {
+        const externalId = document.getElementById("externalId").value;
+        const name = document.getElementById("name").value;
+        const manager = document.getElementById("manager").value;
+        const workers = document.getElementById("workers").value;
+
+        const obj = {
+          name: name,
+          manager: manager,
+          workers: workers,
+          externalId,
+        };
+
+        const resp = await fetch(departmentsUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(obj),
+        });
+      };
+
+      const cancel = () => {
+        location.href = "./departments.html";
+      };
+    </script>
+  </body>
+</html>

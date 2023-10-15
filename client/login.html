@@ -1,0 +1,38 @@
+<html>
+  <body>
+    Username: <input type="text" id="username" /><br />
+    Password: <input type="password" id="password" /><br />
+
+    <button onclick="login()">Login</button>
+
+    <script>
+      const login = async () => {
+        const url = "http://localhost:3000/users/login";
+
+        const loginData = {
+          username: document.getElementById("username").value,
+          password: document.getElementById("password").value,
+        };
+
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(loginData),
+        });
+        const data = await resp.json();
+        sessionStorage.setItem("accessToken", data.accessToken);
+
+        const userResp = await fetch("http://localhost:3000/users", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${data.accessToken}` },
+        });
+        const users = await userResp.json();
+        const user = users.find(
+          (user) => user.username === document.getElementById("username").value
+        );
+        sessionStorage.setItem("fullName", user.fullName);
+        location.href = "./home.html";
+      };
+    </script>
+  </body>
+</html>

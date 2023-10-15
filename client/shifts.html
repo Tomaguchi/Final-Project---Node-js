@@ -1,0 +1,123 @@
+<html>
+  <body onload="loadData()">
+    <h1>Welcome <span id="fullName"></span></h1>
+    Date: <input type="text" id="date" /> <br /><br />
+    Starting Hour: <input type="text" id="startingHour" /> <br /><br />
+    Ending Hour: <input type="text" id="endingHour" /> <br /><br />
+    Workers: <input type="text" id="workers" />
+
+    <br /><br />
+
+    <button onclick="addShift()">Add Shift</button>
+
+    <ul id="shiftsList"></ul>
+
+    <br /><br /><br />
+
+    Date: <input type="text" id="Date" /><br /><br />
+    Starting Hour: <input type="text" id="StartingHour" /><br /><br />
+    Ending Hour: <input type="text" id="EndingHour" /><br /><br />
+    Workers: <input type="text" id="Workers" />
+
+    <br /><br />
+
+    <button onclick="updateShift()">Update</button>
+
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+
+      const accessToken = sessionStorage.getItem("accessToken");
+      const shiftsUrl = "http://localhost:3000/shifts";
+      const employeesUrl = "http://localhost:3000/employees";
+
+      // Don't Work
+      const addShift = async () => {
+        const obj = {
+          date: document.getElementById("date").value,
+          startingHour: document.getElementById("startingHour").value,
+          endingHour: document.getElementById("endingHour").value,
+          workers: document.getElementById("workers").value,
+        };
+
+        const resp = await fetch(shiftsUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(obj),
+        });
+      };
+
+      const loadData = async () => {
+        const shiftsResp = await fetch(shiftsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const shifts = await shiftsResp.json();
+
+        const employeesResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeesResp.json();
+
+        shifts.forEach((shift) => {
+          const list = document.getElementById("shiftsList");
+
+          // Date list
+          const li = document.createElement("li");
+          const link = document.createElement("a");
+          link.innerText = shift.date.split("T")[0];
+          link.onclick = () => {
+            const shift = shifts.find(
+              (Shift) => Shift.date === `${event.target.innerText}T00:00:00.000Z`
+            );
+
+            const employee = employees.find((emp) => shift.workers.includes(emp._id));
+
+            document.getElementById("Date").value = shift.date;
+            document.getElementById("StartingHour").value = shift.startingHour;
+            document.getElementById("EndingHour").value = shift.endingHour;
+            document.getElementById("Workers").value =
+              employee.firstName + " " + employee.lastName;
+
+            sessionStorage.setItem("shiftId", shift._id);
+          };
+
+          li.appendChild(link);
+          list.appendChild(li);
+        });
+      };
+
+      const updateShift = async () => {
+        const shiftId = sessionStorage.getItem("shiftId");
+
+        const shiftsResp = await fetch(shiftsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const shifts = await shiftsResp.json();
+
+        const shift = shifts.find((shift) => shift._id === shiftId);
+
+        const obj = {
+          date: document.getElementById("Date").value,
+          startingHour: document.getElementById("StartingHour").value,
+          endingHour: document.getElementById("EndingHour").value,
+          workers: shift.workers,
+        };
+
+        const resp = await fetch(`${shiftsUrl}/${shift._id}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(obj),
+        });
+      };
+    </script>
+  </body>
+</html>

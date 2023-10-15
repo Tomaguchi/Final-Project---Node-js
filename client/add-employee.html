@@ -1,0 +1,50 @@
+<html>
+  <body>
+    <h1>Hello <span id="fullName"></span></h1>
+    External ID: <input type="text" id="externalId" /> <br />
+    First Name: <input type="text" id="firstName" /> <br />
+    Last Name: <input type="text" id="lastName" /> <br />
+    Start Work Year: <input type="text" id="startWorkYear" /> <br />
+    Department ID: <input type="text" id="departmentId" /> <br /><br />
+    <button onclick="saveEmployee()">Save</button>
+    <button onclick="cancel()">Cancel</button>
+
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+
+      const accessToken = sessionStorage.getItem("accessToken");
+      const employeesUrl = "http://localhost:3000/employees";
+
+      const saveEmployee = async () => {
+        const externalId = document.getElementById("externalId").value;
+        const firstName = document.getElementById("firstName").value;
+        const lastName = document.getElementById("lastName").value;
+        const startWorkYear = document.getElementById("startWorkYear").value;
+        const departmentId = document.getElementById("departmentId").value;
+
+        const obj = {
+          externalId: externalId,
+          firstName: firstName,
+          lastName: lastName,
+          startWorkYear: startWorkYear,
+          departmentId: departmentId,
+        };
+
+        // Dosen't work
+        const resp = await fetch(employeesUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(obj),
+        });
+      };
+
+      const cancel = () => {
+        location.href = "./employees.html";
+      };
+    </script>
+  </body>
+</html>

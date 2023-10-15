@@ -1,0 +1,193 @@
+<html>
+  <body onload="loadData()">
+    <h1>Welcome <span id="fullName"></span></h1>
+
+    <label for="departments">Choose a department:</label>
+    <select id="departments"></select>
+    <br /><br />
+
+    <table id="employeesTable" border="1">
+      <thead>
+        <tr>
+          <th>Full Name</th>
+          <th>Start Work Year</th>
+          <th>Department</th>
+          <th>Shifts</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <br />
+
+    <button onclick="newEmployee()">New Employee</button>
+
+    <br /><br /><br />
+
+    <button onclick="logout()">Logout</button>
+
+    <script>
+      const fullName = sessionStorage.getItem("fullName");
+      document.getElementById("fullName").textContent = fullName;
+
+      const employeesUrl = "http://localhost:3000/employees";
+      const departmentsUrl = "http://localhost:3000/departments";
+      const shiftsUrl = "http://localhost:3000/shifts";
+
+      const loadData = async () => {
+        // GET Employees
+        const accessToken = sessionStorage.getItem("accessToken");
+        const employeesResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeesResp.json();
+
+        // GET departments
+        const departmentsResp = await fetch(departmentsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const departments = await departmentsResp.json();
+
+        // GET shifts
+        const shiftsResp = await fetch(shiftsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const shifts = await shiftsResp.json();
+
+        const tbody = document.getElementById("tbody");
+
+        // table data
+        employees.forEach((employee) => {
+          const tr = tbody.insertRow();
+
+          // Full Name column
+          const tdFullName = tr.insertCell();
+          const nameLink = document.createElement("a");
+          nameLink.href = "./edit-employee.html";
+          nameLink.onclick = () => sessionStorage.setItem("employeeId", employee._id);
+          nameLink.innerText = employee.firstName + " " + employee.lastName;
+          tdFullName.appendChild(nameLink);
+
+          // Start Work Year column
+          const tdStartWorkYear = tr.insertCell();
+          tdStartWorkYear.innerText = employee.startWorkYear;
+
+          // Department column
+          const tdDepartment = tr.insertCell();
+          const departmentLink = document.createElement("a");
+          departmentLink.href = "./edit-department.html";
+          const department = departments.find(
+            (dep) => dep.externalId === employee.departmentId
+          );
+          departmentLink.innerText = department.name;
+          tdDepartment.appendChild(departmentLink);
+
+          // Shifts column
+          const tdShifts = tr.insertCell();
+          const shift = shifts.find((shift) => shift.workers.includes(employee._id));
+          const date = shift.date.split("T")[0];
+          tdShifts.innerText = `
+          Date: ${date}
+          Time: ${shift.startingHour}:00 - ${shift.endingHour}:00
+          `;
+        });
+
+        //Dropdown
+        departments.forEach((department) => {
+          const depSelect = document.getElementById("departments");
+          const option = document.createElement("option");
+          option.value = department.name;
+          option.text = department.name;
+          depSelect.appendChild(option);
+        });
+      };
+
+      const newEmployee = () => {
+        location.href = "./add-employee.html";
+      };
+
+      document.getElementById("departments").addEventListener("change", async () => {
+        // delete table
+        const table = document.getElementById("employeesTable");
+
+        const tbody = table.getElementsByTagName("tbody")[0];
+
+        while (tbody.firstChild) {
+          tbody.removeChild(tbody.firstChild);
+        }
+
+        // populate table
+        const clickedElement = event.target.value;
+
+        const accessToken = sessionStorage.getItem("accessToken");
+        const employeesResp = await fetch(employeesUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const employees = await employeesResp.json();
+
+        // GET departments
+        const departmentsResp = await fetch(departmentsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const departments = await departmentsResp.json();
+
+        // GET shifts
+        const shiftsResp = await fetch(shiftsUrl, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const shifts = await shiftsResp.json();
+
+        const department = departments.find((dep) => dep.name === clickedElement);
+
+        const employee = employees.find(
+          (emp) => emp.departmentId === department.externalId
+        );
+
+        const tr = tbody.insertRow();
+
+        // Full Name column
+        const tdFullName = tr.insertCell();
+        const nameLink = document.createElement("a");
+        nameLink.href = "./edit-employee.html";
+        nameLink.innerText = employee.firstName + " " + employee.lastName;
+        tdFullName.appendChild(nameLink);
+
+        // Start Work Year column
+        const tdStartWorkYear = tr.insertCell();
+        tdStartWorkYear.innerText = employee.startWorkYear;
+
+        // Department column
+        const tdDepartment = tr.insertCell();
+        const departmentLink = document.createElement("a");
+        departmentLink.href = "./edit-department.html";
+        const singleDepartment = departments.find(
+          (dep) => dep.externalId === employee.departmentId
+        );
+        departmentLink.innerText = singleDepartment.name;
+        tdDepartment.appendChild(departmentLink);
+
+        // Shifts column
+        const tdShifts = tr.insertCell();
+        const shift = shifts.find((shift) =>
+          shift.workers.includes(employee.firstName + " " + employee.lastName)
+        );
+        const date = shift.date.split("T")[0];
+        tdShifts.innerText = `
+          Date: ${date}
+          Time: ${shift.startingHour}:00 - ${shift.endingHour}:00
+          `;
+      });
+
+      const logout = () => {
+        location.href = "./login.html";
+
+        sessionStorage.removeItem("accessToken");
+      };
+    </script>
+  </body>
+</html>
